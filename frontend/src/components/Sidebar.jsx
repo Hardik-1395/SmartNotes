@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X ,Youtube, BoomBox, FileText} from "lucide-react"; // install: npm install lucide-react
+import { Menu, X ,Youtube, BoomBox, FileText} from "lucide-react"; 
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
