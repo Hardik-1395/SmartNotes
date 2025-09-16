@@ -1,42 +1,60 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X ,Youtube, BoomBox, FileText} from "lucide-react"; 
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { Home, Youtube, FileText, Clock } from "lucide-react";
 
-export default function Sidebar() {
-  const [isOpen, setIsOpen] = useState(true);
+const Sidebar = () => {
+  const linkClasses = ({ isActive }) =>
+    `flex items-center gap-3 p-2 rounded-lg cursor-pointer ${
+      isActive ? "bg-blue-600 text-white" : "hover:bg-gray-800"
+    }`;
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <div
-        className={`${
-          isOpen ? "w-64" : "w-16"
-        } bg-gray-800 text-white h-[calc(100vh-44px)] flex flex-col transition-all duration-400`}
-      >
-        {/* Hamburger Button */}
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="p-4 focus:outline-none"
-        >
-          {isOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-
-        {/* Menu Links */}
-        <nav className="flex flex-col p-2 space-y-2">
-          <Link to="/yt" className="hover:bg-gray-700 p-2 rounded">
-            {isOpen ? "Youtube Summarizer" : <Youtube/>}
-          </Link>
-          <Link to="/audio-video" className="hover:bg-gray-700 p-2 rounded">
-            {isOpen ? "Audio & Video Summarizer" : <BoomBox/>}
-          </Link>
-          <Link to="/pdf-text" className="hover:bg-gray-700 p-2 rounded">
-            {isOpen ? "PDF & Text Summarizer" : <FileText/>}
-          </Link>
-          <Link to="/meeting" className="hover:bg-gray-700 p-2 rounded">
-            {isOpen ? "Live Meeting Transcriber" : "Live"}
-          </Link>
-        </nav>
+    <aside className="bg-[#12141c] text-white p-4 h-screen">
+      <div className="flex items-center gap-3 mb-8">
+        <img
+          src="https://via.placeholder.com/40"
+          alt="App Logo"
+          className="w-10 h-10 rounded-lg"
+        />
+        <h1 className="text-2xl font-bold ">SmartNotes</h1>
       </div>
-    </div>
+
+      {/* Menu Items */}
+      <div className="flex flex-col gap-90">
+        <ul className="space-y-4 text-gray-400">
+        <li>
+          <NavLink to="/yt" className={linkClasses}>
+            <Youtube size={20} /> YouTube
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/audio-video" className={linkClasses}>
+            <Home size={20} /> Audio/Media
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/pdf-text" className={linkClasses}>
+            <FileText size={20} /> PDF/Text
+          </NavLink>
+        </li>
+        <li>
+          <NavLink to="/meeting" className={linkClasses}>
+            <Clock size={20} /> History
+          </NavLink>
+        </li>
+      </ul>
+
+      <div className="flex items-center ml-2 gap-4">
+        <img
+          src="https://i.pravatar.cc/40"
+          alt="profile"
+          className="w-10 h-10 rounded-full"
+        />
+        <p className="text-gray-300">Sahil Srivastava</p>
+      </div>
+      </div>
+    </aside>
   );
-}
+};
+
+export default Sidebar;
