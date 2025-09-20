@@ -9,7 +9,7 @@ const Sidebar = () => {
     }`;
 
   return (
-    <aside className="bg-[#12141c] text-white p-4 h-screen">
+    <aside className="bg-black text-white p-4 h-screen">
       <div className="flex items-center gap-3 mb-8">
         <img
           src={logo}

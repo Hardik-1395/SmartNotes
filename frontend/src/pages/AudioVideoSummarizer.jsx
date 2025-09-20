@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import { Paperclip, AudioLines, Video } from "lucide-react";
+import { UploadCloud, AudioLines, Video } from "lucide-react";
 import SummaryPage from "./SummaryPage";
 export default function AudioVideoSummarizer() {
   const [summary, setSummary] = useState("");
@@ -31,36 +31,39 @@ export default function AudioVideoSummarizer() {
 
   return (
     <div className="flex flex-col h-full">
-      <h1 className="text-3xl py-2 px-2 font-bold">
+      <h1 className="text-3xl py-2 px-2 font-bold min-h-[50px]">
         Select an Audio or Video to get the summary
       </h1>
-      {/* Input */}
-      <div className="mb-4 mt-2 flex gap-2">
-        <input
-          type="file"
-          id="file-upload"
-          accept="audio/mp3, audio/mpeg, video/mp4"
-          onChange={(e) => setFile(e.target.files[0])} // store file object
-          className="hidden"
-        />
-        {/* Custom styled label as button */}
-        <label
-          htmlFor="file-upload"
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer hover:bg-gray-700"
-        >
-          <AudioLines className="w-5 h-5" />/<Video className="w-5 h-5" />
-          {file ? file.name : "Choose a file"}
-        </label>
-        <button
-          onClick={handleSummarize}
-          className="px-4 py-2 bg-blue-600 rounded cursor-pointer"
-        >
-          <div>{loading ? "⏳ Summarizing..." : "Summarize"}</div>
-        </button>
-      </div>
+      <div className="grid grid-cols-[400px_1fr] flex-1 ">
+        {/* Input */}
+        <div className="mb-4 mt-2 flex flex-col items-center justify-center gap-2">
+          <input
+            type="file"
+            id="file-upload"
+            accept="audio/mp3, audio/mpeg, video/mp4"
+            onChange={(e) => setFile(e.target.files[0])} // store file object
+            className="hidden"
+          />
+          {/* Custom styled label as button */}
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col text-center justify-center items-center gap-2 px-4 py-2 h-[200px] w-full bg-gray-800 text-white rounded cursor-pointer hover:bg-gray-700 border-dotted border-blue-400 border-2"
+          >
+            <UploadCloud className="w-8 h-8 rounded-full bg-gray-700 p-1"/>
+            {file ? file.name : "Drag and drop or Browse your files"}
+            <span className="text-[.8rem] text-gray-400">{file ? "" : "Supported formats - MP3, MP4, MPEG"}</span>
+          </label>
+          <button
+            onClick={handleSummarize}
+            className="px-4 py-2 bg-blue-600 max-h-[40px] rounded cursor-pointer"
+          >
+            <div>{loading ? "⏳ Summarizing..." : "Summarize"}</div>
+          </button>
+        </div>
 
-      {/* Summary + Chat */}
-      <SummaryPage summary={summary} loading={loading} />
+        {/* Summary + Chat */}
+        <SummaryPage summary={summary} loading={loading} />
+      </div>
     </div>
   );
 }

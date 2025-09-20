@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import SummaryPage from "./SummaryPage";
+import VideoPreview from "../components/VideoPreview";
 
 export default function YoutubeSummarizer() {
   const [url, setUrl] = useState("");
@@ -25,16 +26,19 @@ export default function YoutubeSummarizer() {
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <h1 className="text-3xl py-2 px-2 font-bold " >Youtube Video Summarizer</h1>
+    <div className="flex flex-col h-screen"> {/* 🔹 full height container */}
+      <h1 className="text-3xl py-2 px-2 font-bold min-h-[50px]">
+        Youtube Video Summarizer
+      </h1>
+
       {/* Input */}
-      <div className="mb-4 mt-2 flex gap-2">
+      <div className="mb-4 mt-2 flex gap-2 px-2">
         <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Paste YouTube link..."
-          className="flex-1 p-2 rounded bg-gray-800  text-white"
+          className="flex-1 p-2 rounded bg-gray-800 text-white"
         />
         <button
           onClick={handleSummarize}
@@ -44,8 +48,12 @@ export default function YoutubeSummarizer() {
         </button>
       </div>
 
-      {/* Summary + Chat */}
-      <SummaryPage summary={summary} loading={loading} />
+      {/* Grid takes remaining space */}
+      <div className="grid grid-cols-[400px_1fr] flex-1 min-h-0">
+        <VideoPreview url={url} />
+        <SummaryPage summary={summary} loading={loading} />
+      </div>
     </div>
   );
 }
+

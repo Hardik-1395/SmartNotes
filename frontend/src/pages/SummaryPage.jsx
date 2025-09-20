@@ -6,8 +6,9 @@ export default function SummaryPage({ summary, loading }) {
   const [chatMessages, setChatMessages] = useState([
     { from: "bot", text: "Hi! 👋 Ask me anything about the summary." },
   ]);
+
   return (
-    <div className="flex flex-col h-full bg-gray-900 text-white p-4 rounded-lg shadow-lg">
+    <div className="flex flex-col h-full min-h-0 bg-black text-white p-4 rounded-lg shadow-lg">
       {/* Tabs */}
       <div className="flex mb-4">
         <button
@@ -33,15 +34,14 @@ export default function SummaryPage({ summary, loading }) {
         </button>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      {/* Content area */}
+      <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === "summary" && (
-          <div className="bg-gray-800 p-4 rounded-lg shadow-inner whitespace-pre-wrap">
-            {loading
-              ? "⏳ Generating summary..."
-              : summary || "No summary yet."}
+          <div className="bg-gray-800 p-4 rounded-lg shadow-inner whitespace-pre-wrap flex-1 overflow-y-auto">
+            {loading ? "⏳ Generating summary..." : summary || "No summary yet."}
           </div>
         )}
+
         {activeTab === "chat" && summary && (
           <ChatAssistant
             summary={summary}

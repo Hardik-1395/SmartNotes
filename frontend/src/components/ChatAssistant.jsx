@@ -2,20 +2,18 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
 const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
-  
   const [chatInput, setChatInput] = useState("");
   const [prompts, setPrompts] = useState([]);
-  const messagesEndRef = useRef(null); // 🔹 create ref
-  const [thinking, setThinking] =useState(false);
+  const messagesEndRef = useRef(null);
+  const [thinking, setThinking] = useState(false);
 
-  //scrolling to bottom as soon as the message loads 
+  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Fetch prompts if summary loaded
+  // Fetch prompts
   useEffect(() => {
-    
     const fetchPrompts = async () => {
       try {
         const res = await fetch("http://localhost:5000/prompts", {
@@ -23,15 +21,12 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ summary }),
         });
-
         const data = await res.json();
         setPrompts(data.prompts || []);
-      } catch (err) {
-        console.error("Failed to fetch prompts:", err);
+      } catch {
         setPrompts([]);
       }
     };
-
     if (summary) fetchPrompts();
   }, [summary]);
 
@@ -49,31 +44,29 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: chatInput, summary }),
       });
-
       const data = await res.json();
       const botMsg = { from: "bot", text: data.reply || "⚠️ No reply received." };
       setChatMessages((prev) => [...prev, botMsg]);
-    } catch (err) {
-      console.error("Error in chat:", err);
+    } catch {
       setChatMessages((prev) => [
         ...prev,
         { from: "bot", text: "❌ Failed to get response from server." },
       ]);
-    } finally{
+    } finally {
       setThinking(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full relative">
-      {/* Chat Messages */}
-      <div className="space-y-2 h-full overflow-y-auto mb-20 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-col h-full min-h-0">
+      {/* Chat messages container */}
+      <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {chatMessages.map((msg, idx) => (
           <div
             key={idx}
             className={`max-w-xs px-3 py-2 rounded-lg text-sm ${
               msg.from === "bot"
-                ? " text-white self-start"
+                ? "text-white self-start"
                 : "bg-gray-600 text-white self-end ml-auto"
             }`}
           >
@@ -81,20 +74,17 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
           </div>
         ))}
 
-        {/* Thinking indicator */}
         {thinking && (
-          <div className="max-w-xs px-3 py-2 rounded-lg text-sm  text-white self-start">
+          <div className="max-w-xs px-3 py-2 rounded-lg text-sm text-white self-start">
             🤔 Thinking, please wait...
           </div>
         )}
-
-        {/* 🔹 dummy div for auto-scroll */}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Clickable Bot Prompts */}
+      {/* Bot prompts */}
       {prompts.length > 0 && (
-        <div className="mb-16 flex flex-wrap gap-2">
+        <div className="mb-2 flex flex-wrap gap-2 overflow-x-auto">
           {prompts.map((msg, idx) => (
             <div
               key={idx}
@@ -110,8 +100,8 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
         </div>
       )}
 
-      {/* Input Box */}
-      <div className="flex gap-2 absolute bottom-0 w-full bg-gray-900 py-2 px-2">
+      {/* Input box */}
+      <div className="flex gap-2 bg-gray-900 p-2 rounded-b-lg">
         <input
           value={chatInput}
           onChange={(e) => setChatInput(e.target.value)}
