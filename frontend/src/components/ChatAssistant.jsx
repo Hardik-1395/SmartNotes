@@ -16,7 +16,7 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
   useEffect(() => {
     const fetchPrompts = async () => {
       try {
-        const res = await fetch("http://localhost:5000/prompts", {
+        const res = await fetch("http://localhost:8000/prompts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ summary }),
@@ -39,7 +39,7 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
     setThinking(true);
 
     try {
-      const res = await fetch("http://localhost:5000/chat", {
+      const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: chatInput, summary }),

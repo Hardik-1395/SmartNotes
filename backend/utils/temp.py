@@ -1,9 +1,11 @@
-from youtube_transcript_api import YouTubeTranscriptApi,NoTranscriptFound
+from youtube_transcript_api import YouTubeTranscriptApi, NoTranscriptFound
 from urllib.parse import urlparse, parse_qs
+from deep_translator import GoogleTranslator
 
 CHUNK_DURATION = 120
 
 def merge_lines_into_chunks(lines, chunk_duration=CHUNK_DURATION):
+    """Merge transcript lines into chunks of ~chunk_duration seconds."""
     chunks = []
     current_chunk = {"start": lines[0].start, "text": ""}
     current_duration = 0
@@ -15,7 +17,7 @@ def merge_lines_into_chunks(lines, chunk_duration=CHUNK_DURATION):
             current_duration = 0
         else:
             if current_chunk["text"]:
-                current_chunk["text"] += " "  # separate lines with space
+                current_chunk["text"] += " "
             current_chunk["text"] += line.text
             current_duration = line.start - current_chunk["start"]
 
@@ -35,29 +37,26 @@ def extract_videoID(url: str) -> str:
     hostname = parsed_url.netloc
     path = parsed_url.path
 
-    # Standard watch URL
     if "youtube.com" in hostname and path == "/watch":
         return parse_qs(parsed_url.query).get("v", [""])[0]
-
-    # Live URL
     elif "youtube.com" in hostname and path.startswith("/live/"):
         return path.split("/")[2]
-
-    # Short youtu.be URL
     elif "youtu.be" in hostname:
         return path.lstrip("/").split("/")[0]
-
-    # Embed URL
     elif "youtube.com" in hostname and path.startswith("/embed/"):
         return path.split("/")[2]
-
     else:
         raise ValueError("Unsupported URL format")
+
+def batch_translate(texts, target="en"):
+    """Translate a list of texts in one request (faster)."""
+    return GoogleTranslator(source="auto", target=target).translate_batch(texts)
 
 def get_transcripts(url: str):
     """Return transcripts as a list of {time, text} dictionaries."""
     video_id = extract_videoID(url)
-    api=YouTubeTranscriptApi()
+    api = YouTubeTranscriptApi()
+
     try:
         transcript_list = api.fetch(video_id, languages=['en'])
         transcript_lang = 'en'
@@ -67,12 +66,27 @@ def get_transcripts(url: str):
 
     chunks = merge_lines_into_chunks(transcript_list)
 
-    formatted_transcripts =[]
-    for chunk in chunks:
-        text=chunk["text"]
-        formatted_transcripts.append({
-                "time": format_time(chunk["start"]),
-                "text": text  
-            }) 
+    if transcript_lang != "en":
+        # Batch translate all Hindi chunks into English
+        hindi_texts = [chunk["text"] for chunk in chunks]
+        english_texts = batch_translate(hindi_texts, "en")
+
+        formatted_transcripts = [
+            {"time": format_time(chunk["start"]), "text": translated}
+            for chunk, translated in zip(chunks, english_texts)
+        ]
+    else:
+        formatted_transcripts = [
+            {"time": format_time(chunk["start"]), "text": chunk["text"]}
+            for chunk in chunks
+        ]
+
     return formatted_transcripts
 
+# Example usage
+if __name__ == "__main__":
+    url = "https://youtu.be/ITkIdDyXeag?si=Lp5VKHgid4EZAYcG"
+    transcripts = get_transcripts(url)
+
+    for line in transcripts:
+        print(line)

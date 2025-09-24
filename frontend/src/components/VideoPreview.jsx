@@ -1,33 +1,31 @@
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import { Copy } from "lucide-react";
 
 export default function VideoPreview({ url }) {
   const [copied, setCopied] = useState(false);
+  const [transcript, setTranscript] = useState([]);
 
-  // Mock transcript — replace with backend transcript API
-  const transcript = [
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-    { time: "04:10", text: "Conclusion and summary" },
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-    { time: "04:10", text: "Conclusion and summary" },
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-    { time: "04:10", text: "Conclusion and summary" },
-    { time: "00:00", text: "Intro about the topic" },
-    { time: "01:15", text: "Main point number one explained" },
-    { time: "02:30", text: "Supporting details with examples" },
-  ];
+   useEffect(() => {
+    if (!url) return;
+
+    const fetchTranscript = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/transcript/?url=${encodeURIComponent(url)}`
+        );
+        const data = await response.json();
+        if (data.transcript) {
+          setTranscript(data.transcript);
+        } else {
+          setTranscript([{ time: "00:00", text: "Transcript not available" }]);
+        }
+      } catch (error) {
+        setTranscript([{ time: "00:00", text: "Error fetching transcript" }]);
+        console.error(error);
+      }
+    };
+    fetchTranscript();
+  }, [url]);
 
   const getYouTubeId = (ytUrl) => {
     if (!ytUrl) return null;
@@ -108,10 +106,9 @@ export default function VideoPreview({ url }) {
           </button>
         </div>
 
-        {/* Scrollable transcript section */}
         <div className="max-h-85 overflow-y-auto space-y-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {transcript.map((line, i) => (
-            <div key={i} className="p-2 bg-gray-900 rounded-lg">
+            <div key={i} className="p-2 bg-gray-900 overflow-hidden max-h-14 rounded-lg">
               <span className="text-sm text-blue-400 mr-2">{line.time}</span>
               <span>{line.text}</span>
             </div>

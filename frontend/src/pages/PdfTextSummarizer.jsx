@@ -14,7 +14,7 @@ export default function PdfTextSummarizer() {
       const formData = new formData();
       formData.append("file", file);
 
-      const res = await fetch("backendurl/summary", {
+      const res = await fetch("http://localhost:8000/summary", {
         method: "POST",
         body: formData,
       });
