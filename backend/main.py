@@ -15,9 +15,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# creating a post request for summarize route with schema as url:string json object
 class YouTubeRequest(BaseModel):
     url: str
 
+# extracting transcript from the yt url 
 @app.get("/transcript/")
 def transcript_api(url: str):
     try:
