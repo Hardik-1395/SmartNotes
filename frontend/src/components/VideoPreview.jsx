@@ -30,23 +30,19 @@ export default function VideoPreview({ url }) {
   const getYouTubeId = (ytUrl) => {
     if (!ytUrl) return null;
     try {
-      // Handle youtu.be links
       if (ytUrl.includes("youtu.be/")) {
         return ytUrl.split("youtu.be/")[1].split(/[?&]/)[0];
       }
 
-      // Handle youtube.com/watch?v= links
       if (ytUrl.includes("youtube.com/watch")) {
         const urlObj = new URL(ytUrl);
         return urlObj.searchParams.get("v");
       }
 
-      // Handle youtube.com/embed/ links
       if (ytUrl.includes("youtube.com/embed/")) {
         return ytUrl.split("embed/")[1].split(/[?&]/)[0];
       }
 
-      // Handle youtube.com/shorts/ links
       if (ytUrl.includes("youtube.com/shorts/")) {
         return ytUrl.split("shorts/")[1].split(/[?&]/)[0];
       }
@@ -70,7 +66,7 @@ export default function VideoPreview({ url }) {
 
   return (
     <div className="flex flex-col p-2 border-r h border-gray-700 ">
-      {/* Video Mini Player */}
+      
       <div className="aspect-video min-h-[200px] w-full bg-black rounded-lg overflow-hidden">
         {videoId ? (
           <iframe
@@ -87,7 +83,7 @@ export default function VideoPreview({ url }) {
         )}
       </div>
 
-      {/* Transcript */}
+
       <div className="mt-4">
         <div className="flex items-center justify-between mb-2">
           <h2 className="text-lg font-semibold">Transcript</h2>

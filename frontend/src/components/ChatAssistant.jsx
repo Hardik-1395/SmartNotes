@@ -7,12 +7,10 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
   const messagesEndRef = useRef(null);
   const [thinking, setThinking] = useState(false);
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [chatMessages]);
 
-  // Fetch prompts
   useEffect(() => {
     const fetchPrompts = async () => {
       try {
@@ -29,6 +27,8 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
     };
     if (summary) fetchPrompts();
   }, [summary]);
+
+  
 
   const handleSendMessage = async () => {
     if (!chatInput.trim()) return;
@@ -59,7 +59,6 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Chat messages container */}
       <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         {chatMessages.map((msg, idx) => (
           <div
@@ -82,7 +81,6 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Bot prompts */}
       {prompts.length > 0 && (
         <div className="mb-2 flex flex-wrap gap-2 overflow-x-auto">
           {prompts.map((msg, idx) => (
@@ -100,7 +98,6 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
         </div>
       )}
 
-      {/* Input box */}
       <div className="flex gap-2 bg-gray-900 p-2 rounded-b-lg">
         <input
           value={chatInput}

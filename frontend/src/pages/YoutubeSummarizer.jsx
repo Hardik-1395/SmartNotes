@@ -51,7 +51,6 @@ export default function YoutubeSummarizer() {
         </button>
       </div>
 
-      {/* Grid takes remaining space */}
       <div className="grid grid-cols-[400px_1fr] flex-1 min-h-0">
         <VideoPreview url={url} />
         <SummaryPage summary={summary} loading={loading} />

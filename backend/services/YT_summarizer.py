@@ -1,3 +1,5 @@
+# TODO
+# IMPLEMENT RATE LIMITING TO AVOID QUOTA ERRORS 
 import os 
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
@@ -5,11 +7,11 @@ from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
 from pydantic import SecretStr
+import re
 
 load_dotenv()
 GROQ_API_KEY  = os.getenv("GROQ_API_KEY")
 
-# prefer fast, smaller model; fallback remains same if env present
 model_name = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 llm = ChatGroq(model=model_name, api_key=SecretStr(GROQ_API_KEY) if GROQ_API_KEY else None)
 
@@ -33,7 +35,13 @@ Final Summary:
 
 prompt = PromptTemplate(template=prompt_template, input_variables=["text"])
 
-CHUNK_SIZE = 3000  # words per chunk
+CHUNK_SIZE = 5000 
+
+def format_markdown_bold(text: str) -> str:
+    """Convert markdown-style bold (**text**) into styled HTML."""
+    formatted = re.sub(r"\*\*(.*?)\*\*", r'<span class="section-title">\1</span>', text)
+    formatted = formatted.replace("\n", "<br>")
+    return formatted
 
 def chunk_transcript(transcripts: list[dict], chunk_size=CHUNK_SIZE) -> list[str]:
     """Turn transcript list of dicts into word chunks (strings)."""
@@ -60,6 +68,5 @@ def summarize_long_transcript(transcripts: list[dict]) -> str:
     chunks = chunk_transcript(transcripts)
     chunk_summaries = [summarize_youtube_video(chunk) for chunk in chunks]
 
-    # Final pass to combine everything
     final_summary = summarize_youtube_video(" ".join(chunk_summaries))
     return final_summary

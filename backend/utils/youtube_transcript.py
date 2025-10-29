@@ -60,10 +60,8 @@ def get_transcripts(url: str):
     api=YouTubeTranscriptApi()
     try:
         transcript_list = api.fetch(video_id, languages=['en'])
-        transcript_lang = 'en'
     except NoTranscriptFound:
         transcript_list = api.fetch(video_id, languages=['hi'])
-        transcript_lang = 'hi'
 
     chunks = merge_lines_into_chunks(transcript_list)
 

@@ -63,7 +63,6 @@ const Sidebar = () => {
           </li>
         </ul>
 
-        {/* Profile Section */}
         <div className="flex items-center gap-3 p-2 rounded-lg bg-[#0f1117] border border-gray-800">
           {user?.photoURL ? (
             <img
