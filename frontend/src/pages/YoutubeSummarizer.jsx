@@ -6,23 +6,28 @@ export default function YoutubeSummarizer() {
   const [url, setUrl] = useState("");
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
+  const [transcript, setTranscript] = useState([]); 
 
   const handleSummarize = async () => {
     if (!url.trim()) return;
+    if (!transcript || transcript.length === 0) {
+      alert("Transcript not available yet!");
+      return;
+    }
     setLoading(true);
 
     try {
     const res = await fetch("http://localhost:8000/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url,transcript, }),
     });
 
     const data = await res.json();
     setSummary(data.summary);
   } catch (err) {
     console.error(err);
-    setSummary("❌ Failed to connect to backend.");
+    setSummary("❌ Failed to generate summary.");
   } finally {
     setLoading(false);
   }
@@ -52,7 +57,7 @@ export default function YoutubeSummarizer() {
       </div>
 
       <div className="grid grid-cols-[400px_1fr] flex-1 min-h-0">
-        <VideoPreview url={url} />
+        <VideoPreview url={url} setTranscript={setTranscript}/>
         <SummaryPage summary={summary} loading={loading} />
       </div>
     </div>

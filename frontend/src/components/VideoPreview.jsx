@@ -1,9 +1,9 @@
 import React, { useState,useEffect } from "react";
 import { Copy } from "lucide-react";
 
-export default function VideoPreview({ url }) {
+export default function VideoPreview({ url,setTranscript }) {
   const [copied, setCopied] = useState(false);
-  const [transcript, setTranscript] = useState([]);
+  const [localTranscript, setLocalTranscript] = useState([]);
 
    useEffect(() => {
     if (!url) return;
@@ -15,11 +15,14 @@ export default function VideoPreview({ url }) {
         );
         const data = await response.json();
         if (data.transcript) {
+          setLocalTranscript(data.transcript);
           setTranscript(data.transcript);
         } else {
+          setLocalTranscript([{ time: "00:00", text: "Transcript not available" }]);
           setTranscript([{ time: "00:00", text: "Transcript not available" }]);
         }
       } catch (error) {
+        setLocalTranscript([{ time: "00:00", text: "Error fetching transcript" }]);
         setTranscript([{ time: "00:00", text: "Error fetching transcript" }]);
         console.error(error);
       }
@@ -103,7 +106,7 @@ export default function VideoPreview({ url }) {
         </div>
 
         <div className="max-h-85 overflow-y-auto space-y-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {transcript.map((line, i) => (
+          {localTranscript.map((line, i) => (
             <div key={i} className="p-2 bg-gray-900 overflow-hidden max-h-14 rounded-lg">
               <span className="text-sm text-blue-400 mr-2">{line.time}</span>
               <span>{line.text}</span>
