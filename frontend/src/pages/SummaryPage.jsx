@@ -17,11 +17,32 @@ export default function SummaryPage({ summary, loading }) {
   };
 
   const formatSummary = (text) => {
-    if (!text) return "";
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<span class="section-title">$1</span>')
-      .replace(/\n/g, "<br>");
-  };
+  if (!text) return "";
+
+  let formatted = text;
+
+  // 1️⃣ Handle asterisks **Bold**
+  formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="section-title">$1</span>');
+
+  // 2️⃣ Handle hash-style headings (###, ##, #)
+  formatted = formatted.replace(/^###\s+(.*)$/gm, '<span class="section-title">$1</span>');
+  formatted = formatted.replace(/^##\s+(.*)$/gm, '<span class="section-title">$1</span>');
+  formatted = formatted.replace(/^#\s+(.*)$/gm, '<span class="section-title">$1</span>');
+
+  // 3️⃣ Handle bullets * or -
+  formatted = formatted.replace(/^\s*[\*\-]\s+(.*)$/gm, '<li>$1</li>');
+
+  // 4️⃣ Wrap list items in <ul> if any exist
+  if (/<li>/.test(formatted)) {
+    formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+  }
+
+  // 5️⃣ Replace remaining line breaks with <br>
+  formatted = formatted.replace(/\n/g, "<br>");
+
+  return formatted;
+};
+
 
   return (
     <div className="flex flex-col h-full min-h-0 bg-black text-white p-4 rounded-lg shadow-lg">

@@ -1,33 +1,39 @@
-# TODO
-# IMPLEMENT RATE LIMITING TO AVOID QUOTA ERRORS 
-import os 
+import os
+import asyncio
+import nest_asyncio
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
 from langchain.chains.summarize import load_summarize_chain
 from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
 from pydantic import SecretStr
-import re
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import random
+import re 
 
+nest_asyncio.apply()
 load_dotenv()
-GROQ_API_KEY  = os.getenv("GROQ_API_KEY")
 
-model_name = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
-llm = ChatGroq(model=model_name, api_key=SecretStr(GROQ_API_KEY) if GROQ_API_KEY else None)
+# === CONFIG ===
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
+CHUNK_SIZE = 7000
+CHUNK_OVERLAP = 200
+MAX_PARALLEL = 10   
+
+llm = ChatGroq(model=MODEL_NAME, api_key=SecretStr(GROQ_API_KEY) if GROQ_API_KEY else None)
 
 prompt_template = """
-You are an expert content summarizer. Your task is to produce a clear, accurate, and token-efficient summary of the content below.
+You are an expert summarizer. Summarize the following tutorial or educational transcript clearly and accurately.
 
-Requirements:
-- Language: **English only**.
-- Maximum length: **400 words**.
-- Style: Clear, concise, explanatory (as if teaching), using short direct sentences.
-- Coverage: Capture only the main ideas and essential details. 
-- Efficiency: Avoid repetition, filler words, or restating the same idea in different forms.
-- Faithfulness: Do not add new information, assumptions, or opinions.
-- Audience: Assume the reader is learning the topic and wants a precise explanation.
+Guidelines:
+- Use English only, under 600 words.
+- Explain concepts, steps, logic, and examples.
+- Exclude code, personal remarks, or unrelated info.
+- Use clear section titles and bullet points.
+- Keep it concise, direct, and faithful to the text.
 
-Content to summarize:
+Content:
 {text}
 
 Final Summary:
@@ -35,38 +41,75 @@ Final Summary:
 
 prompt = PromptTemplate(template=prompt_template, input_variables=["text"])
 
-CHUNK_SIZE = 5000 
+def clean_transcript_text(full_text: str) -> str:
+    """
+    Remove common English and Hindi filler words, repeated spaces, and extra punctuation from the transcript.
+    """
+    filler_words_en = r"\b(uh|um|erm|like|you know|so|yeah|basically|actually|right|I mean|kinda|sorta|well)\b"
+    
+    filler_words_hi = r"\b(अच्छा|हम्म|मतलब|चलिए|चलो|ठीक है|अरे|उफ़|ओह|सुनो|जानते हो|वैसे|देखो|बस|तो|हाँ|है ना|यानी|क्या कहते हैं|वैसे तो)\b"
+    
+    fillers = f"({filler_words_en}|{filler_words_hi})"
+    
+    cleaned = re.sub(fillers, "", full_text, flags=re.IGNORECASE)
+    
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
 
-def format_markdown_bold(text: str) -> str:
-    """Convert markdown-style bold (**text**) into styled HTML."""
-    formatted = re.sub(r"\*\*(.*?)\*\*", r'<span class="section-title">\1</span>', text)
-    formatted = formatted.replace("\n", "<br>")
-    return formatted
 
-def chunk_transcript(transcripts: list[dict], chunk_size=CHUNK_SIZE) -> list[str]:
-    """Turn transcript list of dicts into word chunks (strings)."""
-    full_text = " ".join([line["text"] for line in transcripts])  # <-- ensure pure string
-    words = full_text.split()
-    chunks = [" ".join(words[i:i+chunk_size]) for i in range(0, len(words), chunk_size)]
-    return chunks
+def chunk_transcript(transcripts: list[dict], chunk_size=CHUNK_SIZE):
+    full_text = " ".join([line["text"] for line in transcripts])
+    cleaned_text=clean_transcript_text(full_text)
+    splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=CHUNK_OVERLAP)
+    docs = splitter.create_documents([cleaned_text])
+    return [doc.page_content for doc in docs]
 
-def summarize_youtube_video(text: str) -> str:
-    """Summarize a single chunk of text."""
+# rate limit handling 
+summarization_chain = load_summarize_chain(llm, chain_type="stuff", prompt=prompt)
+async def safe_summarize(text: str) -> str:
     try:
         if not text.strip():
-            return "No content found for the provided YouTube URL."
-
-        docs = [Document(page_content=text)]  # <-- must be a string
-        chain = load_summarize_chain(llm, chain_type="stuff", prompt=prompt)
-        summary = chain.run(docs)
-        return summary.strip()
+            return "No content found."
+        docs = [Document(page_content=text)]
+        
+        return summarization_chain.run(docs).strip()
+    # retrying logic while ensuring rate limiting
     except Exception as e:
-        return f"Failed to summarize video: {str(e)}"
+        msg = str(e)
+        return f"Failed to summarize: {msg}"
+
+# batch processing 
+async def summarize_chunks(chunks: list[str]):
+    results = []
+    sem = asyncio.Semaphore(MAX_PARALLEL)
+
+    async def worker(chunk):
+        async with sem:
+            return await safe_summarize(chunk)
+
+    for i in range(0, len(chunks), MAX_PARALLEL):
+        batch = chunks[i:i+MAX_PARALLEL]
+        batch_results = await asyncio.gather(*[worker(c) for c in batch])
+        results.extend(batch_results)
+        # small delay between batches
+        await asyncio.sleep(0.5)
+
+    return results
 
 def summarize_long_transcript(transcripts: list[dict]) -> str:
-    """Handle long transcripts by chunking + combining summaries."""
     chunks = chunk_transcript(transcripts)
-    chunk_summaries = [summarize_youtube_video(chunk) for chunk in chunks]
+    print(f" {len(chunks)} chunks created.")
 
-    final_summary = summarize_youtube_video(" ".join(chunk_summaries))
-    return final_summary
+    loop = asyncio.get_event_loop()
+    chunk_summaries = loop.run_until_complete(summarize_chunks(chunks))
+
+    while len(" ".join(chunk_summaries).split()) > 4000:
+        grouped = [
+            " ".join(chunk_summaries[i:i+3])
+            for i in range(0, len(chunk_summaries), 3)
+        ]
+        print(f"🔁 Compressing summaries into {len(grouped)} groups...")
+        chunk_summaries = loop.run_until_complete(summarize_chunks(grouped))
+
+    final_summary = loop.run_until_complete(safe_summarize(" ".join(chunk_summaries)))
+    return final_summary.strip()
