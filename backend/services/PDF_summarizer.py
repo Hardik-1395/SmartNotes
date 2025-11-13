@@ -25,7 +25,7 @@ prompt_template = """
 You are an expert summarizer. Summarize the following tutorial or educational transcript clearly and accurately.
 
 Guidelines:
-- Use English only strictly for response, under 600 words.
+- Use English only, under 600 words.
 - Explain concepts, steps, logic, and examples.
 - Exclude code, personal remarks, or unrelated info.
 - Use clear section titles and bullet points.
@@ -54,12 +54,18 @@ def clean_transcript_text(full_text: str) -> str:
     cleaned = re.sub(r"\s+", " ", cleaned).strip()
     return cleaned
 
+def clean_pdf_text(text):
+    text = re.sub(r"\n+", " ", text)
+    text = re.sub(r" {2,}", " ", text)
+    text = re.sub(r"-\s+", "", text)  
+    text = re.sub(r"Page \d+ of \d+", "", text)
+    text = re.sub(r"\d+\s?\n?", "", text) 
+    text = text.strip()
+    return text
 
-def chunk_transcript(transcripts: list[dict], chunk_size=CHUNK_SIZE):
-    #cleaning the transcript i.e. removing the time part from it, and retainign only the text part 
-    full_text = " ".join([line["text"] for line in transcripts]) 
-    #removing filler words
-    cleaned_text=clean_transcript_text(full_text) 
+def chunk_content(pdf_docs , chunk_size=CHUNK_SIZE):
+    raw_text = " ".join([doc.page_content for doc in pdf_docs]) 
+    cleaned_text = clean_pdf_text(clean_transcript_text(raw_text))
     splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=CHUNK_OVERLAP)
     docs = splitter.create_documents([cleaned_text])
     return [doc.page_content for doc in docs]
@@ -90,15 +96,15 @@ async def summarize_chunks(chunks: list[str]):
         batch = chunks[i:i+MAX_PARALLEL]  # batch will store first 10 chunks, then next 10 chunks and so on 
         batch_results = await asyncio.gather(*[worker(c) for c in batch]) #running all requests together 
         results.extend(batch_results)
-
+        # small delay between batches to prevent rate limiting
         if len(chunks) > MAX_PARALLEL:
             await asyncio.sleep(0.5)
 
     return results
 
-async def summarize_long_transcript(transcripts: list[dict]) -> str:
-    chunks = chunk_transcript(transcripts)
-    print(f" {len(chunks)} chunks created.")
+async def summarize_long_pdf(pdf_docs: list) -> str:
+    chunks = chunk_content(pdf_docs)
+    print(f" {len(chunks)} chunks created from PDF content.")
 
     if not chunks:
         return "No content found."

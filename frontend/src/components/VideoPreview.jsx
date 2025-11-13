@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Copy } from "lucide-react";
 
-export default function VideoPreview({ url, setTranscript, setTitle }) {
+export default function VideoPreview({ url, transcript,setTranscript, setTitle }) {
   const [copied, setCopied] = useState(false);
   const [localTranscript, setLocalTranscript] = useState([]);
 
@@ -10,27 +10,23 @@ export default function VideoPreview({ url, setTranscript, setTitle }) {
 
     const fetchTranscriptAndTitle = async () => {
       try {
-        // Fetch transcript
-        const response = await fetch(
-          `http://localhost:8000/transcript/?url=${encodeURIComponent(url)}`
-        );
-        const data = await response.json();
+        // 🧠 Only fetch transcript if we don’t already have one
+        if (!Array.isArray(transcript) || transcript.length === 0) {
+          const response = await fetch(
+            `http://localhost:8000/transcript/?url=${encodeURIComponent(url)}`
+          );
+          const data = await response.json();
 
-        if (data.transcript) {
-          setLocalTranscript(data.transcript);
-          setTranscript(data.transcript);
-        } else {
-          setLocalTranscript([
-            { time: "00:00", text: "Transcript not available" },
-          ]);
-          setTranscript([{ time: "00:00", text: "Transcript not available" }]);
+          if (data.transcript && Array.isArray(data.transcript)) {
+            setTranscript(data.transcript);
+          } else {
+            setTranscript([{ time: "00:00", text: "Transcript not available" }]);
+          }
         }
 
-        // Fetch video title
+        // 🧩 Fetch video title
         const resTitle = await fetch(
-          `https://www.youtube.com/oembed?url=${encodeURIComponent(
-            url
-          )}&format=json`
+          `https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`
         );
         if (resTitle.ok) {
           const titleData = await resTitle.json();
@@ -39,12 +35,9 @@ export default function VideoPreview({ url, setTranscript, setTitle }) {
           setTitle("YouTube Video");
         }
       } catch (error) {
-        setLocalTranscript([
-          { time: "00:00", text: "Error fetching transcript" },
-        ]);
+        console.error("Error fetching transcript or title:", error);
         setTranscript([{ time: "00:00", text: "Error fetching transcript" }]);
         setTitle("YouTube Video");
-        console.error(error);
       }
     };
 
@@ -115,15 +108,19 @@ export default function VideoPreview({ url, setTranscript, setTitle }) {
         </div>
 
         <div className="max-h-85 overflow-y-auto space-y-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          {localTranscript.map((line, i) => (
-            <div
-              key={i}
-              className="p-2 bg-gray-900 overflow-hidden max-h-14 rounded-lg"
-            >
-              <span className="text-sm text-blue-400 mr-2">{line.time}</span>
-              <span>{line.text}</span>
-            </div>
-          ))}
+          {Array.isArray(transcript) && transcript.length > 0 ? (
+            transcript.map((line, i) => (
+              <div
+                key={i}
+                className="p-2 bg-gray-900 overflow-hidden max-h-14 rounded-lg"
+              >
+                <span className="text-sm text-blue-400 mr-2">{line.time}</span>
+                <span>{line.text}</span>
+              </div>
+            ))
+          ) : (
+            <div className="text-gray-400">No transcript available.</div>
+          )}
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ReactMarkdown from "react-markdown";
 import { Search, X, Copy } from "lucide-react";
 import { auth } from "../firebase.js";
 
@@ -16,7 +17,9 @@ export default function History() {
         if (!user) throw new Error("User not logged in");
 
         const userId = user.uid;
-        const response = await fetch(`http://localhost:8000/notes/?user_id=${userId}`);
+        const response = await fetch(
+          `http://localhost:8000/notes/?user_id=${userId}`
+        );
         if (!response.ok) throw new Error("Failed to fetch notes");
 
         const data = await response.json();
@@ -26,15 +29,15 @@ export default function History() {
           return;
         }
 
-        const formattedNotes = data.map(note => ({
+        const formattedNotes = data.map((note) => ({
           ...note,
-          date: note.created_at 
-            ? new Date(note.created_at).toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'short', 
-                day: 'numeric' 
+          date: note.created_at
+            ? new Date(note.created_at).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
               })
-            : 'Unknown date'
+            : "Unknown date",
         }));
 
         setNotes(formattedNotes);
@@ -50,7 +53,7 @@ export default function History() {
   }, []);
 
   const filteredNotes = notes.filter(
-    note =>
+    (note) =>
       note.title.toLowerCase().includes(search.toLowerCase()) ||
       note.summary.toLowerCase().includes(search.toLowerCase())
   );
@@ -62,17 +65,32 @@ export default function History() {
     let formatted = text;
 
     // Bold
-    formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<span class="font-bold">$1</span>');
+    formatted = formatted.replace(
+      /\*\*(.*?)\*\*/g,
+      '<span class="font-bold">$1</span>'
+    );
 
     // Headings
-    formatted = formatted.replace(/^###\s+(.*)$/gm, '<span class="text-lg font-semibold">$1</span><br>');
-    formatted = formatted.replace(/^##\s+(.*)$/gm, '<span class="text-lg font-semibold">$1</span><br>');
-    formatted = formatted.replace(/^#\s+(.*)$/gm, '<span class="text-lg font-semibold">$1</span><br>');
+    formatted = formatted.replace(
+      /^###\s+(.*)$/gm,
+      '<span class="text-lg font-semibold">$1</span><br>'
+    );
+    formatted = formatted.replace(
+      /^##\s+(.*)$/gm,
+      '<span class="text-lg font-semibold">$1</span><br>'
+    );
+    formatted = formatted.replace(
+      /^#\s+(.*)$/gm,
+      '<span class="text-lg font-semibold">$1</span><br>'
+    );
 
     // Bullets
-    formatted = formatted.replace(/^\s*[\*\-]\s+(.*)$/gm, '<li>$1</li>');
+    formatted = formatted.replace(/^\s*[\*\-]\s+(.*)$/gm, "<li>$1</li>");
     if (/<li>/.test(formatted)) {
-      formatted = formatted.replace(/(<li>.*<\/li>)/gs, '<ul class="list-disc list-inside mb-2">$1</ul>');
+      formatted = formatted.replace(
+        /(<li>.*<\/li>)/gs,
+        '<ul class="list-disc list-inside mb-2">$1</ul>'
+      );
     }
 
     // Remaining line breaks
@@ -97,32 +115,42 @@ export default function History() {
           type="text"
           placeholder="Search notes..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
           className="w-full pl-10 pr-4 py-2 border rounded-xl focus:ring focus:ring-blue-300 outline-none text-sm sm:text-base"
         />
       </div>
 
-      {loading && <p className="text-gray-400 text-center py-8">Loading notes...</p>}
+      {loading && (
+        <p className="text-gray-400 text-center py-8">Loading notes...</p>
+      )}
       {error && <p className="text-red-400 text-center py-8">Error: {error}</p>}
 
       {!loading && !error && (
         <div className="flex-1 overflow-y-auto space-y-4 border-t border-gray-600 pt-2">
           {filteredNotes.length > 0 ? (
-            filteredNotes.map(note => (
+            filteredNotes.map((note) => (
               <div
                 key={note.id}
                 onClick={() => setSelectedNote(note)}
                 className="p-3 sm:p-4 border-0 rounded-xl hover:bg-gray-700 cursor-pointer transition"
               >
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 gap-2">
-                  <h2 className="text-base sm:text-lg text-yellow-300 font-semibold break-words">{note.title}</h2>
-                  <span className="text-xs sm:text-sm text-gray-300 whitespace-nowrap">{note.date}</span>
+                  <h2 className="text-base sm:text-lg text-yellow-300 font-semibold break-words">
+                    {note.title}
+                  </h2>
+                  <span className="text-xs sm:text-sm text-gray-300 whitespace-nowrap">
+                    {note.date}
+                  </span>
                 </div>
-                <p className="text-sm sm:text-base text-gray-300 line-clamp-2">{note.summary}</p>
+                <p className="text-sm sm:text-base text-gray-300 line-clamp-2">
+                  {note.summary}
+                </p>
               </div>
             ))
           ) : (
-            <p className="text-gray-500 text-center py-8 text-sm sm:text-base">No notes found.</p>
+            <p className="text-gray-500 text-center py-8 text-sm sm:text-base">
+              No notes found.
+            </p>
           )}
         </div>
       )}
@@ -144,19 +172,76 @@ export default function History() {
               onClick={() => copySummary(selectedNote.summary)}
               className="absolute top-2 right-10 sm:top-3 sm:right-12 text-black bg-white rounded-md hover:bg-gray-200 flex items-center gap-1 px-2 py-1 text-xs sm:text-sm"
             >
-              <Copy size={16} className="sm:w-[18px] sm:h-[18px] text-black"/> <span className="hidden sm:inline">Copy</span>
+              <Copy size={16} className="sm:w-[18px] sm:h-[18px] text-black" />{" "}
+              <span className="hidden sm:inline">Copy</span>
             </button>
 
-            <h2 className="text-lg sm:text-2xl mt-2 font-bold text-yellow-300 mb-4 pr-16 break-words">{selectedNote.title}</h2>
-            <p className="text-xs sm:text-sm text-gray-400 mb-2">Type: {selectedNote.type}</p>
-            <p className="text-xs sm:text-sm text-gray-400 mb-4 break-all">Source: {selectedNote.source}</p>
+            <h2 className="text-lg sm:text-2xl mt-2 font-bold text-yellow-300 mb-4 pr-16 break-words">
+              {selectedNote.title}
+            </h2>
+            <p className="text-md sm:text-lg  font-bold mb-2 break-all">
+              Title: {selectedNote.title}
+            </p>
+            <p className="text-xs sm:text-sm font-bold mb-2">
+              Type: {selectedNote.type}
+            </p>
+            <p className="text-xs sm:text-sm font-bold mb-4 break-all">
+              Source: {selectedNote.source}
+            </p>
 
             {/* Scrollable summary */}
             <div
               className="overflow-y-auto text-gray-300 text-3xl sm:text-base"
-              style={{ maxHeight: "60vh" }}
-              dangerouslySetInnerHTML={{ __html: formatSummary(selectedNote.summary) }}
-            />
+              style={{ maxHeight: "90vh" }}
+            >
+              <ReactMarkdown
+                components={{
+                  h1: ({ node, ...props }) => (
+                    <h1
+                      className="text-yellow-400 font-bold text-4xl mt-2 mb-2"
+                      {...props}
+                    />
+                  ),
+                  h2: ({ node, ...props }) => (
+                    <h2
+                      className="text-yellow-400 font-bold text-3xl mt-2 mb-2"
+                      {...props}
+                    />
+                  ),
+                  h3: ({ node, ...props }) => (
+                    <h3
+                      className="text-yellow-400 font-bold text-2xl mt-2 mb-2"
+                      {...props}
+                    />
+                  ),
+
+                  strong: ({ node, ...props }) => (
+                    <strong
+                      className="text-yellow-400 font-bold text-xl mb-10 mt-10"
+                      {...props}
+                    />
+                  ),
+
+                  p: ({ node, ...props }) => (
+                    <p className="text-white text-md mb-3 mt-3" {...props} />
+                  ),
+
+                  ul: ({ node, ...props }) => (
+                    <ul className="list-disc ml-4 mb-2 mt-2" {...props} />
+                  ),
+
+                  ol: ({ node, ...props }) => (
+                    <ol className="list-decimal ml-4 " {...props} />
+                  ),
+
+                  li: ({ node, ...props }) => (
+                    <li className="text-white text-md " {...props} />
+                  ),
+                }}
+              >
+                {selectedNote.summary}
+              </ReactMarkdown>
+            </div>
           </div>
         </div>
       )}

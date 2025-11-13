@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 
-const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
+const ChatAssistant = ({ summary, chatMessages, setChatMessages, collection = "default" }) => {
   const [chatInput, setChatInput] = useState("");
   const [prompts, setPrompts] = useState([]);
   const messagesEndRef = useRef(null);
@@ -42,7 +42,7 @@ const ChatAssistant = ({ summary, chatMessages, setChatMessages }) => {
       const res = await fetch("http://localhost:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: chatInput, summary }),
+        body: JSON.stringify({ message: chatInput, summary, collection }),
       });
       const data = await res.json();
       const botMsg = { from: "bot", text: data.reply || "⚠️ No reply received." };

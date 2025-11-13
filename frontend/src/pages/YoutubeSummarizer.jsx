@@ -28,19 +28,27 @@ export default function YoutubeSummarizer() {
     if (savedUrl && savedSummary) {
       setSummary(savedSummary);
       setUrl(savedUrl);
-      setTranscript(savedTranscript);
+      const parsedTranscript = JSON.parse(savedTranscript);
+      setTranscript(parsedTranscript);
     }
   }, []);
 
   useEffect(() => {
     if (summary) {
-      localStorage.setItem("summary_youtube", summary );
-      localStorage.setItem("summary_url", url );
-      localStorage.setItem("summary_transcript",transcript);
+      localStorage.setItem("summary_youtube", summary);
+      localStorage.setItem("summary_url", url);
+      localStorage.setItem("summary_transcript", JSON.stringify(transcript));
     }
   }, [summary]);
 
-  
+  const clearStorage = () => {
+    localStorage.removeItem("summary_youtube");
+    localStorage.removeItem("summary_url");
+    localStorage.removeItem("summary_transcript");
+    setUrl("");
+    setSummary("");
+    setTranscript([]);
+  };
 
   const handleSummarize = async () => {
     if (!url.trim()) return;
@@ -52,7 +60,7 @@ export default function YoutubeSummarizer() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/summarize", {
+      const res = await fetch("http://localhost:8000/summarize-yt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -63,6 +71,10 @@ export default function YoutubeSummarizer() {
           transcript,
         }),
       });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
 
       const data = await res.json();
       console.log("Backend response:", data);
@@ -78,9 +90,17 @@ export default function YoutubeSummarizer() {
 
   return (
     <div className="flex flex-col h-screen">
-      <h1 className="text-3xl py-2 px-2 font-bold min-h-[50px]">
-        Youtube Video Summarizer
-      </h1>
+      <div className="flex items-center justify-between">
+        <div className="text-3xl py-2 px-2 font-bold min-h-[50px]">
+          Youtube Video Summarizer
+        </div>
+        <button
+          onClick={() => clearStorage()}
+          className="bg-amber-300 text-black p-1 font-bold rounded-md cursor-pointer hover:bg-amber-200"
+        >
+          Clear Page
+        </button>
+      </div>
 
       {/* Input */}
       <div className="mb-4 mt-2 flex gap-2 px-2">
@@ -107,6 +127,7 @@ export default function YoutubeSummarizer() {
       <div className="grid grid-cols-[400px_1fr] flex-1 min-h-0">
         <VideoPreview
           url={url}
+          transcript={transcript}
           setTranscript={setTranscript}
           setTitle={setTitle}
         />

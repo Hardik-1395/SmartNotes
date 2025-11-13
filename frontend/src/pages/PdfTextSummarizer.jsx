@@ -1,50 +1,84 @@
 import React, { useState, useEffect } from "react";
 import SummaryPage from "./SummaryPage";
+import { auth } from "../firebase.js";
 import { Paperclip, File } from "lucide-react";
 export default function PdfTextSummarizer() {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState(null); // store uploaded file
+  const [file, setFile] = useState(null);
+  const [userID, setUserID] = useState(null);
+  const [title, setTitle] = useState("PDF");
+
+  // Track Firebase auth user
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) setUserID(user.uid);
+      else setUserID(null);
+    });
+    return () => unsubscribe();
+  }, []);
 
   // Persist summary locally so it survives navigation
   useEffect(() => {
-    const saved = localStorage.getItem("summary_pdf");
-    if (saved) setSummary(saved);
+    const savedSummary = localStorage.getItem("summary_pdf");
+    if (savedSummary) setSummary(savedSummary);
   }, []);
 
   useEffect(() => {
-    if (summary !== undefined) {
-      localStorage.setItem("summary_pdf", summary || "");
+    if (summary) {
+      localStorage.setItem("summary_pdf", summary);
     }
   }, [summary]);
 
+  const clearStorage = () => {
+    localStorage.removeItem("summary_pdf");
+    setSummary("");
+  };
+
   const handleSummarize = async () => {
     if (!file) return;
+
+    if (!userID) return alert("User not logged in!");
     setLoading(true);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("user_id", userID);
+      formData.append("type", "pdf");
 
-      const res = await fetch("http://localhost:8000/summary", {
+      const res = await fetch("http://localhost:8000/summarize-pdf", {
         method: "POST",
         body: formData,
       });
 
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
       const data = await res.json();
 
       setSummary(data.summary || "Failed to generate summary Try again");
-    } catch (err) {
-      setSummary("Elon Musk is a visionary entrepreneur, engineer, and innovator whose work has had a profound impact on multiple industries, ranging from space exploration to electric vehicles and renewable energy. As the founder of SpaceX, he has revolutionized the aerospace industry by developing reusable rockets, drastically reducing the cost of space travel, and laying the groundwork for potential human colonization of Mars. Through Tesla, Musk has accelerated the global transition to sustainable energy, popularizing electric cars and pushing the boundaries of battery technology and autonomous driving. Beyond these ventures, he has been involved in ambitious projects such as Neuralink, which aims to create brain-computer interfaces, and The Boring Company, which focuses on tunnel infrastructure to reduce urban traffic congestion. Musk’s approach is characterized by first-principles thinking, a willingness to take massive risks, and an insistence on solving fundamental problems rather than incremental improvements. His influence extends beyond technology; he has become a cultural figure whose ideas about innovation, the future of humanity, and the ethical use of technology spark discussion and debate worldwide. Despite criticism for his unconventional management style and controversial statements, Musk remains one of the most impactful and polarizing figures of the 21st century, driving conversations about what is possible when audacious vision is combined with relentless execution.");
+    } catch (error) {
+      console.error("❌ PDF summarization failed:", error);
+      setSummary("An error occurred while summarizing the PDF.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col h-full">
-      <h1 className="text-3xl py-2 px-2 font-bold">
-        Select a PDF to get the summary
-      </h1>
+      <div className="flex items-center justify-between">
+        <div className="text-3xl py-2 px-2 font-bold min-h-[50px]">
+          PDF Summarizer
+        </div>
+        <button
+          onClick={() => clearStorage()}
+          className="bg-amber-300   mt-10 text-black p-1 font-bold rounded-md cursor-pointer hover:bg-amber-200"
+        >
+          Clear Page
+        </button>
+      </div>
       {/* Input */}
       <div className="mb-4 mt-2 flex gap-2">
         <input

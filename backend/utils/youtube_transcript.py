@@ -55,7 +55,7 @@ def extract_videoID(url: str) -> str:
         raise ValueError("Unsupported URL format")
 
 def get_transcripts(url: str):
-    """Return transcripts as a list of {time, text} dictionaries."""
+    "0""Return transcripts as a list of {time, text} dictionaries."""
     video_id = extract_videoID(url)
     api=YouTubeTranscriptApi()
     try:
