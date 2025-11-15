@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import ChatAssistant from "../components/ChatAssistant.jsx";
-import { Copy } from "lucide-react";
+import { Copy, Download } from "lucide-react";
 
 export default function SummaryPage({ summary, loading }) {
   const [activeTab, setActiveTab] = useState("summary");
@@ -58,6 +58,15 @@ export default function SummaryPage({ summary, loading }) {
           onClick={handleCopyAll}
           className="flex items-center gap-1 px-2 py-1 bg-gray-800 hover:bg-gray-700 cursor-pointer ml-auto rounded text-xs sm:text-sm"
         >
+          <>
+            <Download className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="">Save to PDF</span>
+          </>
+        </button>
+        <button
+          onClick={handleCopyAll}
+          className="flex items-center gap-1 px-2 py-1 bg-gray-800 hover:bg-gray-700 cursor-pointer ml-auto rounded text-xs sm:text-sm"
+        >
           {copied ? (
             <span className="text-green-400">Copied!</span>
           ) : (
@@ -72,7 +81,7 @@ export default function SummaryPage({ summary, loading }) {
 
       <div className="flex-1 min-h-0 min-w-full flex flex-col">
         {activeTab === "summary" && (
-          <div className="bg-gray-800 p-2 sm:p-4 rounded-lg shadow-inner  flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-sm sm:text-base">
+          <div className="bg-black p-2 sm:p-4 rounded-lg shadow-inner  flex-1 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden text-sm sm:text-base">
             {loading ? (
               "⏳ Generating summary..."
             ) : summary ? (
@@ -105,10 +114,7 @@ export default function SummaryPage({ summary, loading }) {
                   ),
 
                   p: ({ node, ...props }) => (
-                    <p
-                      className="text-white text-lg mb-3 mt-3"
-                      {...props}
-                    />
+                    <p className="text-white text-lg mb-3 mt-3" {...props} />
                   ),
 
                   ul: ({ node, ...props }) => (
@@ -120,10 +126,7 @@ export default function SummaryPage({ summary, loading }) {
                   ),
 
                   li: ({ node, ...props }) => (
-                    <li
-                      className="text-white text-lg "
-                      {...props}
-                    />
+                    <li className="text-white text-lg " {...props} />
                   ),
                 }}
               >

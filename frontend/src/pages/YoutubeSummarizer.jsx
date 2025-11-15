@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import SummaryPage from "./SummaryPage";
 import VideoPreview from "../components/VideoPreview";
 import { auth } from "../firebase.js";
+import {jsPDF} from "jspdf"
 
 export default function YoutubeSummarizer() {
   const [url, setUrl] = useState("");
@@ -50,6 +51,7 @@ export default function YoutubeSummarizer() {
     setTranscript([]);
   };
 
+  
   const handleSummarize = async () => {
     if (!url.trim()) return;
     if (!transcript || transcript.length === 0) {

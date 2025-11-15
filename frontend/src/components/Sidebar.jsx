@@ -32,7 +32,7 @@ const Sidebar = () => {
   const initials = getInitials(displayName);
 
   return (
-    <aside className="bg-black text-white p-4 h-screen flex flex-col justify-between">
+    <aside className="bg-black border-r-2 border-gray-800 text-white p-4 h-screen flex flex-col justify-between">
   {/* Top section (Logo + Menu) */}
   <div>
     {/* Logo */}
@@ -50,12 +50,12 @@ const Sidebar = () => {
       </li>
       <li>
         <NavLink to="/audio-video" className={linkClasses}>
-          <AudioLines size={20} /> Audio/Media
+          <AudioLines size={20} /> Audio/Video
         </NavLink>
       </li>
       <li>
         <NavLink to="/pdf-text" className={linkClasses}>
-          <FileText size={20} /> PDF/Text
+          <FileText size={20} /> PDF
         </NavLink>
       </li>
       <li>
