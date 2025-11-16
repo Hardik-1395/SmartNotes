@@ -86,6 +86,35 @@ async def summarize_youtube_and_save(req: SummarizeRequest):
         return {"error": str(e)}
 
 # --------------------------
+# Summarize & Save Note YOUTUBE
+# --------------------------
+@app.post("/summarize-media")
+async def summarize_media_and_save(req: SummarizeRequest):
+    try:
+        if req.transcript:
+            transcripts = [item.dict() for item in req.transcript]
+        else:
+            return {"error": "Provide a transcript "}
+
+        summary = await summarize_long_transcript(transcripts)
+
+        note_data = NoteModel(
+            user_id=req.user_id,
+            title=req.title,
+            type=req.type,
+            summary=summary,
+            source="Uploaded media"
+        )
+
+        saved_note = create_note(note_data)
+
+        return {"summary": summary, "note": saved_note}
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# --------------------------
 # Summarize & Save Note PDF
 # --------------------------
 @app.post("/summarize-pdf")
