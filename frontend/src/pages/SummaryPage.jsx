@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import ChatAssistant from "../components/ChatAssistant.jsx";
-import { Copy } from "lucide-react";
+import { Copy, Download } from "lucide-react";
 
 export default function SummaryPage({ summary, loading }) {
   const [activeTab, setActiveTab] = useState("summary");
@@ -131,10 +131,7 @@ export default function SummaryPage({ summary, loading }) {
                   ),
 
                   p: ({ node, ...props }) => (
-                    <p
-                      className="text-white text-lg mb-3 mt-3"
-                      {...props}
-                    />
+                    <p className="text-white text-lg mb-3 mt-3" {...props} />
                   ),
 
                   ul: ({ node, ...props }) => (
@@ -146,10 +143,7 @@ export default function SummaryPage({ summary, loading }) {
                   ),
 
                   li: ({ node, ...props }) => (
-                    <li
-                      className="text-white text-lg "
-                      {...props}
-                    />
+                    <li className="text-white text-lg " {...props} />
                   ),
                 }}
               >

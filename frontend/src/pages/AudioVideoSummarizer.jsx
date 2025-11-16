@@ -27,7 +27,7 @@ export default function AudioVideoSummarizer() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch("http://localhost:8000/summary", {
+      const res = await fetch("http://localhost:8000/summarize-media", {
         method: "POST",
         body: formData,
       });
