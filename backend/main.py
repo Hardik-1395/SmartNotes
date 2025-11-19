@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Body, Response
 from fastapi import UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -15,6 +15,9 @@ from services.media_summariser.process_media import process_media_file
 
 from database.historySchema import NoteModel, NoteResponseModel
 from database.crud import create_note, get_notes_by_user
+
+import subprocess
+import tempfile
 
 app = FastAPI()
 
@@ -172,7 +175,7 @@ async def summarize_PDF_and_save(
     type: str = Form("PDF")
 ):
     try:
-        import tempfile
+        
         from langchain_community.document_loaders import PyPDFLoader
         temp_pdf_path = None
         try:
@@ -294,3 +297,60 @@ Bullet Points:
         return {"status": "error", "error": str(e)}
 
 
+
+@app.post("/download-pdf")
+async def download_pdf(markdown: str = Body(..., embed=True)):
+    tmp_md_path = None
+    tmp_pdf_path = None
+    try:
+        # 1. Create temporary markdown file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".md") as tmp_md:
+            tmp_md.write(markdown.encode("utf-8"))
+            tmp_md_path = tmp_md.name
+
+        # 2. Temporary output PDF file
+        tmp_pdf_path = tmp_md_path.replace(".md", ".pdf")
+
+        # 3 . Run md-to-pdf via Node (use text=True to get string output)
+        command = ["/c/Users/Sahil/AppData/Roaming/npm/md-to-pdf", tmp_md_path, "--dest", tmp_pdf_path]
+
+        process = subprocess.run(command, capture_output=True, text=True)
+
+        print("STDOUT:", process.stdout)
+        print("STDERR:", process.stderr)
+
+        if process.returncode != 0:
+            # Include stderr in the exception for debugging
+            raise HTTPException(status_code=500, detail=(process.stderr or "md-to-pdf failed"))
+
+        # 4. Read PDF bytes
+        if not os.path.exists(tmp_pdf_path):
+            raise HTTPException(status_code=500, detail="PDF file was not created")
+
+        with open(tmp_pdf_path, "rb") as pdf_file:
+            pdf_bytes = pdf_file.read()
+
+        # 5. Return PDF with headers
+        return Response(     #type: ignore
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": "attachment; filename=summary.pdf"
+            },
+        )
+
+    except HTTPException:
+        # re-raise HTTPExceptions unchanged
+        raise
+    except Exception as e:
+        # Return a 500 with the error message
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        # Cleanup temporary files if they were created
+        try:
+            if tmp_md_path and os.path.exists(tmp_md_path):
+                os.remove(tmp_md_path)
+            if tmp_pdf_path and os.path.exists(tmp_pdf_path):
+                os.remove(tmp_pdf_path)
+        except Exception:
+            pass

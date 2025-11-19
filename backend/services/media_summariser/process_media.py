@@ -21,7 +21,7 @@ PIPELINE = BatchedInferencePipeline(model=WHISPER_MODEL)
 print(WHISPER_MODEL.model.device)
 
 
-def convert_video_to_audio(input_file: str, output_file: str, speed: float = 1.25) -> bool:
+def convert_video_to_audio(input_file: str, output_file: str, speed: float = 2.0) -> bool:
     """
     Convert an MP4 file to MP3 using ffmpeg.
     
