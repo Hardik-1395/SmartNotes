@@ -17,9 +17,32 @@ export default function SummaryPage({ summary, loading }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-  const downloadPDF=()=>{
+  
+  const downloadPDF = async () => {
+  try {
+    const response = await fetch("http://localhost:8000/download-pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markdown: summary }),
+    });
 
+    if (!response.ok) throw new Error("PDF generation failed");
+
+    const blob = await response.blob();
+    const pdfUrl = window.URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = pdfUrl;
+    a.download = "summary.pdf";
+    a.click();
+
+    window.URL.revokeObjectURL(pdfUrl);
+  } catch (error) {
+    console.error("Error downloading PDF:", error);
   }
+};
+
+
 
   return (
     <div className="flex flex-col w-full h-full min-h-0 bg-black text-white p-2 sm:p-4 rounded-lg shadow-lg">
