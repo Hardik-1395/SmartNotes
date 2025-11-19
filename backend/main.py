@@ -82,6 +82,7 @@ async def summarize_youtube_and_save(req: SummarizeRequest):
         else:
             return {"error": "Provide either a transcript or a URL"}
 
+        
         summary = await summarize_long_transcript(transcripts)
 
         note_data = NoteModel(
