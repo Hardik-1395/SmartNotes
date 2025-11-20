@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import SummaryPage from "./SummaryPage";
 import { auth } from "../firebase.js";
 import { Paperclip, File } from "lucide-react";
+
 export default function PdfTextSummarizer() {
   const [summary, setSummary] = useState("");
   const [loading, setLoading] = useState(false);
   const [file, setFile] = useState(null);
   const [userID, setUserID] = useState(null);
   const [title, setTitle] = useState("PDF");
-  const [noteId, setNoteId] = useState("");
+  const [noteId, setNoteId] = useState(null);
+
   // Track Firebase auth user
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -30,6 +32,13 @@ export default function PdfTextSummarizer() {
     }
   }, [summary]);
 
+  // Whenever noteId updates, log it
+  useEffect(() => {
+    if (noteId) {
+      console.log("NoteId updated:", noteId);
+    }
+  }, [noteId]);
+
   const clearStorage = () => {
     localStorage.removeItem("summary_pdf");
     setSummary("");
@@ -37,15 +46,15 @@ export default function PdfTextSummarizer() {
 
   const handleSummarize = async () => {
     if (!file) return;
-
     if (!userID) return alert("User not logged in!");
-    setLoading(true);
 
+    setLoading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("user_id", userID);
       formData.append("type", "pdf");
+      formData.append("note_id", noteId);
 
       const res = await fetch("http://localhost:8000/summarize-pdf", {
         method: "POST",
@@ -55,15 +64,17 @@ export default function PdfTextSummarizer() {
       if (!res.ok) {
         throw new Error(`Server error: ${res.status}`);
       }
-      const data = await res.json();
 
-      if (data.summary) 
-      {
-         setSummary(data.summary);
-         setNoteId(data.note._id)
-         console.log("Note ID:", data.note._id)
+      const data = await res.json();
+      console.log(data.note);
+
+      if (data.summary) {
+        setSummary(data.summary);
+        setNoteId(data.note.id);
+        console.log("Note ID:", data.note.id);
+      } else {
+        setSummary("❌ Failed to generate summary.");
       }
-      else setSummary("❌ Failed to generate summary.");
     } catch (error) {
       console.error("❌ PDF summarization failed:", error);
       setSummary("An error occurred while summarizing the PDF.");
@@ -80,24 +91,24 @@ export default function PdfTextSummarizer() {
         </div>
         <button
           onClick={() => clearStorage()}
-          className="bg-amber-300   mt-10 text-black p-1 font-bold rounded-md cursor-pointer hover:bg-amber-200"
+          className="bg-amber-300 mt-10 text-black p-1 font-bold rounded-md cursor-pointer hover:bg-amber-200"
         >
           Clear Page
         </button>
       </div>
+
       {/* Input */}
       <div className="mb-4 mt-2 flex gap-2 max-h-[50px]">
         <input
           type="file"
           id="file-upload"
           accept="application/pdf"
-          onChange={(e) => setFile(e.target.files[0])} // store file object
+          onChange={(e) => setFile(e.target.files[0])}
           className="hidden"
         />
-        {/* Custom styled label as button */}
         <label
           htmlFor="file-upload"
-          className="flex items-center  gap-2 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer hover:bg-gray-700 "
+          className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded cursor-pointer hover:bg-gray-700"
         >
           <File className="w-5 h-5" />
           {file ? file.name : "Choose a file"}
@@ -111,7 +122,7 @@ export default function PdfTextSummarizer() {
       </div>
 
       {/* Summary + Chat */}
-      <SummaryPage summary={summary} loading={loading} noteId={noteId}/>
+      <SummaryPage summary={summary} loading={loading} noteId={noteId} />
     </div>
   );
 }

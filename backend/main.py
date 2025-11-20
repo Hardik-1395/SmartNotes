@@ -27,11 +27,12 @@ app = FastAPI()
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Request Schemas
 class YouTubeRequest(BaseModel):
@@ -42,21 +43,25 @@ class TranscriptItem(BaseModel):
     time: str
     text: str
 
+
 class SummarizeRequest(BaseModel):
     user_id: str
     title: str
-    type: str = "youtube"  
+    type: str = "youtube"
     url: Optional[str] = None
     transcript: Optional[List[TranscriptItem]] = None
 
+
 class FlashcardRequest(BaseModel):
     summary: str
+
 
 class ChatRequest(BaseModel):
     message: str
     summary: Optional[str] = None
     videoId: str
-    
+
+
 # --------------------------
 # YouTube Transcript API route for viewPage component transcript displaying
 # --------------------------
@@ -72,6 +77,7 @@ def transcript_api(url: str):
     except Exception as e:
         return {"error": str(e)}
 
+
 # --------------------------
 # Summarize & Save Note YOUTUBE
 # --------------------------
@@ -84,11 +90,11 @@ async def summarize_youtube_and_save(req: SummarizeRequest):
             transcripts = get_transcripts(req.url)
         else:
             return {"error": "Provide either a transcript or a URL"}
-        
+
         text_for_embedding = " ".join([item["text"] for item in transcripts])
-        
+
         summary = await summarize_long_transcript(transcripts)
-        
+
         embedding_reference = None
         embeddings = None
         try:
@@ -122,20 +128,21 @@ async def summarize_youtube_and_save(req: SummarizeRequest):
             "summary": summary,
             "note": response_note,
             "embeddings_status": "success" if embedding_reference else "skipped",
-            "id": saved_note.get("id")
+            "id": saved_note.get("_id")
         }
 
     except Exception as e:
         return {"error": str(e)}
+
 
 # --------------------------
 # Summarize & Save Note MEDIA (Audio/Video)
 # --------------------------
 @app.post("/summarize-media")
 async def summarize_media_and_save(
-    file: UploadFile = File(...),
-    user_id: str = Form(...),
-    type: str = Form("media")
+        file: UploadFile = File(...),
+        user_id: str = Form(...),
+        type: str = Form("media")
 ):
     import tempfile
     temp_file_path = None
@@ -164,14 +171,14 @@ async def summarize_media_and_save(
 
         if not transcripts or len(transcripts) == 0:
             return {"error": "Failed to transcribe the media file. Please ensure the file contains audio."}
-        
-        else :
+
+        else:
             print("Transcript length is : ", len(transcripts))
             text_for_embedding = " ".join([item["text"] for item in transcripts])
-    
+
         # Summarize transcript
         summary = await summarize_media_transcript(transcripts)
-        
+
         embedding_reference = None
         embeddings = None
         try:
@@ -203,7 +210,7 @@ async def summarize_media_and_save(
             "summary": summary,
             "note": response_note,
             "embeddings_status": "success" if embedding_reference else "skipped",
-            "id": saved_note.get("id")
+            "id": saved_note.get("_id")
         }
 
     except ValueError as e:
@@ -225,12 +232,12 @@ async def summarize_media_and_save(
 # --------------------------
 @app.post("/summarize-pdf")
 async def summarize_PDF_and_save(
-    file: UploadFile = File(...),
-    user_id: str = Form(...),
-    type: str = Form("PDF")
+        file: UploadFile = File(...),
+        user_id: str = Form(...),
+        type: str = Form("PDF")
 ):
     try:
-        
+
         from langchain_community.document_loaders import PyPDFLoader
         temp_pdf_path = None
         try:
@@ -240,14 +247,14 @@ async def summarize_PDF_and_save(
             with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf:
                 temp_pdf.write(pdf_bytes)
                 temp_pdf_path = temp_pdf.name
-            print("path of pdf :" , temp_pdf_path)
-            pdf_name = file.filename 
+            print("path of pdf :", temp_pdf_path)
+            pdf_name = file.filename
             loader = PyPDFLoader(temp_pdf_path)
             pdf_docs = loader.load()
             pdf_text_only = [doc.page_content for doc in pdf_docs]
-        
+
             clean_text = "".join(pdf_text_only)
-            clean_text = clean_text.replace("\n"," ")
+            clean_text = clean_text.replace("\n", " ")
         finally:
             if temp_pdf_path and os.path.exists(temp_pdf_path):
                 try:
@@ -288,12 +295,13 @@ async def summarize_PDF_and_save(
             "summary": summary,
             "note": response_note,
             "embeddings_status": "success" if embedding_reference else "skipped",
-            "id": saved_note.get("id")
+            "id": saved_note.get("_id")
         }
 
     except Exception as e:
         return {"error": str(e)}
-    
+
+
 # --------------------------
 # Get Notes by User
 # --------------------------
@@ -321,13 +329,13 @@ async def summarize_for_flashcard(req: FlashcardRequest):
     try:
         if not req.summary or req.summary.strip() == "":
             return {"error": "Summary is required"}
-        
+
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             return {"error": "Groq API key not configured"}
-        
+
         client = Groq(api_key=groq_api_key)
-        
+
         prompt = f"""
 Extract exactly 6 key bullet points from the following summary. 
 Each bullet point should be concise (max 15 words) and capture the main idea.
@@ -338,20 +346,20 @@ Summary:
 
 Bullet Points:
 """
-        
+
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=500,
             temperature=0.7
         )
-        
+
         bullet_points_text = response.choices[0].message.content
         if not bullet_points_text:
             return {"status": "error", "error": "No response from Groq"}
-        
+
         bullet_points_text = bullet_points_text.strip()
-        
+
         # Parse bullet points into a list
         lines = bullet_points_text.split("\n")
         bullet_points = []
@@ -362,16 +370,16 @@ Bullet Points:
                 cleaned = line.lstrip("0123456789.-•) ").strip()
                 if cleaned:
                     bullet_points.append(cleaned)
-        
+
         # Ensure we have exactly 6 (or as many as extracted)
         bullet_points = bullet_points[:6]
-        
+
         return {
             "status": "success",
             "bullet_points": bullet_points,
             "count": len(bullet_points)
         }
-    
+
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
@@ -385,14 +393,14 @@ async def generate_prompts(request: dict = Body(...)):
         summary = request.get("summary", "")
         if not summary or not summary.strip():
             return {"prompts": []}
-        
+
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             return {"prompts": []}
-        
+
         client = Groq(api_key=groq_api_key)
-        
-        prompt = f"""Based on this summary, generate 3 good questions a user might ask about the content.
+
+        prompt = f"""Based on this summary strictly, generate 3 good questions a user might ask about the content, dont include anything outside the summary.
 Return only the questions, one per line, very short, without numbering or bullet points.
 
 Summary:
@@ -400,28 +408,28 @@ Summary:
 
 Questions:
 """
-        
+
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=300,
             temperature=0.7
         )
-        
+
         questions_text = response.choices[0].message.content
         if not questions_text:
             return {"prompts": []}
-        
+
         questions_text = questions_text.strip()
-        
+
         # Split by newlines and clean
         questions = [q.strip() for q in questions_text.split("\n") if q.strip()]
-        
+
         # Convert to prompt objects
         prompts = [{"text": q} for q in questions[:4]]
-        
+
         return {"prompts": prompts}
-    
+
     except Exception as e:
         print(f"Error generating prompts: {str(e)}")
         return {"prompts": []}
@@ -436,61 +444,121 @@ async def chat_with_rag(request: dict = Body(...)):
         from database.crud import notes_collection
         from langchain_huggingface import HuggingFaceEmbeddings
         import numpy as np
-        
+
         message = request.get("message", "").strip()
         summary = request.get("summary", "").strip()
         note_id = request.get("note_id", "").strip()
-        
+
+        print(f"Note ID: {note_id}")
+        print(f"Summary: {summary}")
+        print(f"Message: {message}")
+
         if not message:
             return {"reply": "Please ask a question."}
-        
+
         groq_api_key = os.getenv("GROQ_API_KEY")
         if not groq_api_key:
             return {"reply": "⚠️ API key not configured."}
-        
+
+        # Initialize embedding model
         embedding_model = HuggingFaceEmbeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
-        
+        print("Model loaded")
+
         question_embedding = embedding_model.embed_query(message)
-        
-        # i am retrieving embeddings from mongo db here 
+        print("Question embeddings generated")
+
+        # Retrieve embeddings from MongoDB
         context_text = ""
+        retrieval_method = None
+
         if note_id:
             try:
                 note = notes_collection.find_one({"_id": ObjectId(note_id)})
+                print(f"Note found: {note is not None}")
+
                 if note and note.get("embeddings"):
                     embeddings_list = note["embeddings"]
-                    
+                    print(f"Found {len(embeddings_list)} embedding chunks")
+
                     # Compute similarity scores
                     scores = []
                     for emb_item in embeddings_list:
                         if isinstance(emb_item, dict) and "embedding" in emb_item:
-                            stored_embedding = np.array(emb_item["embedding"])
+                            # Extract the embedding from MongoDB's extended JSON format
+                            raw_embedding = emb_item["embedding"]
+
+                            # Handle MongoDB's $numberDouble format
+                            if isinstance(raw_embedding, list):
+                                # Extract numeric values from $numberDouble wrappers
+                                stored_embedding = np.array([
+                                    float(val["$numberDouble"]) if isinstance(val, dict) and "$numberDouble" in val
+                                    else float(val) #type: ignore
+                                    for val in raw_embedding
+                                ], dtype=np.float32)
+
+                                print(f"Converted embedding shape: {stored_embedding.shape}")
+                            else:
+                                stored_embedding = np.array(raw_embedding)
+
                             question_vec = np.array(question_embedding)
-                            
+
+                            # Ensure both vectors have the same dimension
+                            if len(stored_embedding) != len(question_vec):
+                                print(
+                                    f"⚠️ Dimension mismatch: stored={len(stored_embedding)}, question={len(question_vec)}")
+                                continue
+
                             # Cosine similarity
                             similarity = np.dot(stored_embedding, question_vec) / (
-                                np.linalg.norm(stored_embedding) * np.linalg.norm(question_vec) + 1e-8
+                                    np.linalg.norm(stored_embedding) * np.linalg.norm(question_vec) + 1e-8
                             )
-                            scores.append((similarity, emb_item.get("text", "")))
-                    
-                    # Sort by similarity and get top-3 chunks
-                    scores.sort(reverse=True, key=lambda x: x[0])
-                    top_chunks = [text for _, text in scores[:3]]
-                    context_text = "\n\n".join(top_chunks)
+
+                            text_chunk = emb_item.get("text", "").strip()
+                            if text_chunk:  # Only add non-empty chunks
+                                scores.append((similarity, text_chunk))
+                                print(f"Similarity: {similarity:.4f}")
+
+                    if scores:
+                        # Sort by similarity and get top-3 chunks
+                        scores.sort(reverse=True, key=lambda x: x[0])
+                        top_chunks = [text for _, text in scores[:3]]
+                        context_text = "\n\n".join(top_chunks)
+                        retrieval_method = "embeddings"
+                        print(f"Retrieved {len(top_chunks)} chunks via embeddings")
+                        print(f"Top similarity score: {scores[0][0]:.4f}")
+                    else:
+                        print("No valid embeddings found after processing")
+
+                # Fallback to summary if embeddings didn't work
+                if not context_text and summary:
+                    context_text = summary
+                    retrieval_method = "summary"
+                    print("Falling back to summary")
+
+                # Last resort: use full note content if available
+                if not context_text and note and note.get("content"):
+                    context_text = note["content"]
+                    retrieval_method = "full_content"
+                    print("Falling back to full note content")
+
             except Exception as e:
-                print(f"⚠️ Error retrieving embeddings from note_id: {str(e)}")
-        
-        # falling back to summary in csae summary generation has failed
-        if not context_text and summary:
-            context_text = summary
-        print(context_text)
+                print(f"⚠️ Error retrieving from note_id: {str(e)}")
+                import traceback
+                traceback.print_exc()
+
+        # Final check for context
         if not context_text:
-            return {"reply": "No context available to answer from."}
-        
-        rag_prompt = f"""Answer the following question based ONLY on the provided context in english only strictly.
-If the answer is not in the context, say "I don't have that information in the provided context."
+            return {
+                "reply": "I don't have any context to answer your question. Please make sure:\n"
+                         "1. A valid note_id is provided, or\n"
+                         "2. The note has been processed with embeddings, or\n"
+                         "3. A summary is available."
+            }
+
+        # Build RAG prompt
+        rag_prompt = f"""Use the following context to answer the question. If the information needed to answer is not present in the context, respond that the context does not include the answer"
 
 Context:
 {context_text}
@@ -499,22 +567,27 @@ Question: {message}
 
 Answer:
 """
-        
+
         client = Groq(api_key=groq_api_key)
-        
+
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": rag_prompt}],
             max_tokens=1000,
             temperature=0.7
         )
-        
+
         reply = response.choices[0].message.content
         if not reply:
             reply = "⚠️ No response generated."
-        
-        return {"reply": reply.strip()}
-    
+
+        print(f"Response generated using {retrieval_method}")
+
+        return {
+            "reply": reply.strip(),
+            "context_source": retrieval_method  # Optional: helps with debugging
+        }
+
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
         import traceback

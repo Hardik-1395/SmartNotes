@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Send } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 const ChatAssistant = ({ summary, chatMessages, setChatMessages, noteId }) => {
+  if (!noteId)
+    return null
   const [chatInput, setChatInput] = useState("");
   const [prompts, setPrompts] = useState([]);
   const messagesEndRef = useRef(null);

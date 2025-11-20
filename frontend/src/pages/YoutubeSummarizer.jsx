@@ -22,6 +22,12 @@ export default function YoutubeSummarizer() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+      if (noteId) {
+        console.log("NoteId updated:", noteId);
+      }
+    }, [noteId]);
+    
   // Persist summary locally so it survives navigation
   useEffect(() => {
     const savedSummary = localStorage.getItem("summary_youtube");
