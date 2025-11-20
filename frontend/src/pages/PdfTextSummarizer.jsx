@@ -8,7 +8,7 @@ export default function PdfTextSummarizer() {
   const [file, setFile] = useState(null);
   const [userID, setUserID] = useState(null);
   const [title, setTitle] = useState("PDF");
-const [noteId, setNoteId] = useState("");
+  const [noteId, setNoteId] = useState("");
   // Track Firebase auth user
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -57,7 +57,13 @@ const [noteId, setNoteId] = useState("");
       }
       const data = await res.json();
 
-      setSummary(data.summary || "Failed to generate summary Try again");
+      if (data.summary) 
+      {
+         setSummary(data.summary);
+         setNoteId(data.note._id)
+         console.log("Note ID:", data.note._id)
+      }
+      else setSummary("❌ Failed to generate summary.");
     } catch (error) {
       console.error("❌ PDF summarization failed:", error);
       setSummary("An error occurred while summarizing the PDF.");
@@ -105,7 +111,7 @@ const [noteId, setNoteId] = useState("");
       </div>
 
       {/* Summary + Chat */}
-      <SummaryPage summary={summary} loading={loading} />
+      <SummaryPage summary={summary} loading={loading} noteId={noteId}/>
     </div>
   );
 }

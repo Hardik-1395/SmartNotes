@@ -245,7 +245,9 @@ async def summarize_PDF_and_save(
             loader = PyPDFLoader(temp_pdf_path)
             pdf_docs = loader.load()
             pdf_text_only = [doc.page_content for doc in pdf_docs]
-            print(pdf_text_only)
+        
+            clean_text = "".join(pdf_text_only)
+            clean_text = clean_text.replace("\n"," ")
         finally:
             if temp_pdf_path and os.path.exists(temp_pdf_path):
                 try:
@@ -255,18 +257,39 @@ async def summarize_PDF_and_save(
 
         summary = await summarize_long_pdf(pdf_docs)
 
+        embedding_reference = None
+        embeddings = None
+        try:
+            embeddings = create_embeddings(clean_text)
+            if embeddings:
+                import uuid
+                embedding_reference = f"yt_{uuid.uuid4().hex[:8]}"
+                print(f"✓ Embeddings created successfully with reference: {embedding_reference}")
+            else:
+                print("⚠ Embeddings returned None, proceeding without embedding storage")
+        except Exception as embedding_error:
+            print(f"⚠ Error creating embeddings: {str(embedding_error)}")
+
         note_data = NoteModel(
             user_id=user_id,
             title=pdf_name,
             type=type,
             summary=summary,
             pdf_content=pdf_text_only,
-            source="Uploaded PDF"
+            source="Uploaded PDF",
+            embeddings=embeddings
         )
 
         saved_note = create_note(note_data)
+        response_note = dict(saved_note)
+        response_note.pop("embeddings", None)
 
-        return {"summary": summary, "note": saved_note}
+        return {
+            "summary": summary,
+            "note": response_note,
+            "embeddings_status": "success" if embedding_reference else "skipped",
+            "id": saved_note.get("id")
+        }
 
     except Exception as e:
         return {"error": str(e)}
@@ -462,7 +485,7 @@ async def chat_with_rag(request: dict = Body(...)):
         # falling back to summary in csae summary generation has failed
         if not context_text and summary:
             context_text = summary
-        
+        print(context_text)
         if not context_text:
             return {"reply": "No context available to answer from."}
         
